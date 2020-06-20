@@ -1,0 +1,21 @@
+# 1. Power Consumption
+- **VCC Range** 2.7 V - 5.5 V
+- **Target Voltage** 3 V {*2x 1.5 V rechargable AAA or button battery*}
+
+# 2. PIN Usage
+| Pin | PB    | Function  |
+| ----- |--------| -----------------|
+| 1     | PB5 |  !RESET|
+| 2     | PB3 |   PCINT3 (Bluetooth) |
+| 3     | PB4 |   PCINT4 (Bluetooth) |
+| 4     | ---      |    VCC  |
+| 5     | PB0 |    PCINT0 (Trigger)|
+| 6     | PB1 |    PCINT1 (Start Button) |
+| 7     | PB2 |    PCINT2 (StatusLED)|
+| 8     | ---      |    GND |
+
+
+# 3. Settings
+## 3.1 Frequency
+- use **8 MHz** for lowest energy consumption, also it seems to hold 8 MHz at 3 V and 25 °C with +-10%
+- TODO: callibrate Clock? 
