@@ -1,0 +1,3 @@
+[Jakobimatrix] [03.06.2020] 8h research + scatch + buy parts for prototype
+[Jakobimatrix] [05.06.2020] 2h set up Android Studio + Git repositories
+[Jakobimatrix] [05.06.2020] 4h first unfinnished raw design of app, preparations and some trial and error
