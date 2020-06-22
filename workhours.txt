@@ -1,3 +1,10 @@
-[Jakobimatrix] [03.06.2020] 8h research + scatch + buy parts for prototype
-[Jakobimatrix] [05.06.2020] 2h set up Android Studio + Git repositories
-[Jakobimatrix] [05.06.2020] 4h first unfinnished raw design of app, preparations and some trial and error
+| Who              | Date            | Hours | Comment |
+| -----------------|----------------|----------|---------------|
+| Jakobimatrix | 03.06.2020 | 8h | research + scatch + buy parts for prototype
+| Jakobimatrix | 05.06.2020 | 2h | set up Android Studio + Git repositories
+| Jakobimatrix | 05.06.2020 | 4h | first unfinnished raw design of app, preparations and some trial and error
+| Jakobimatrix | 18.06.2020 | 2h | soldering the programmer and test flashes
+| Jakobimatrix | 19.06.2020 | 4h | working out ATtiny configuration, testing and research
+| Jakobimatrix | 20.06.2020 | 3h | Writeing Dokumentation, drawing beta scematics
+| Jakobimatrix | 21.06.2020 | 3h | research about bluetooth connection and begin writeing Java Class (Android)
+| Jakobimatrix | 22.06.2020 | 5h | formulateing functions to calculate shutter delay such that they only need integer arithmetic + Define Protokol for function transmition via Bluetooth + Dokumentation 

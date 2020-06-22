@@ -1,6 +1,7 @@
 # 1. Power Consumption
 - **VCC Range** 2.7 V - 5.5 V
 - **Target Voltage** 3 V {*2x 1.5 V rechargable AAA or button battery*}
+- minimal Power consumption using [Watchdog](http://gammon.com.au/forum/?id=11497&reply=6#reply6Posteingangx). 
 
 # 2. PIN Usage
 | Pin | PB    | Function  |
@@ -9,8 +10,8 @@
 | 2     | PB3 |   PCINT3 (Bluetooth) |
 | 3     | PB4 |   PCINT4 (Bluetooth) |
 | 4     | ---      |    VCC  |
-| 5     | PB0 |    PCINT0 (Trigger)|
-| 6     | PB1 |    PCINT1 (Start Button) |
+| 5     | PB0 |    PCINT0 (Hold-Switch)|
+| 6     | PB1 |    PCINT1 (Trigger) |
 | 7     | PB2 |    PCINT2 (StatusLED)|
 | 8     | ---      |    GND |
 
@@ -18,4 +19,38 @@
 # 3. Settings
 ## 3.1 Frequency
 - use **8 MHz** for lowest energy consumption, also it seems to hold 8 MHz at 3 V and 25 °C with +-10%
-- TODO: callibrate Clock? 
+- TODO: callibrate Clock?
+
+# 4. Functions and Communication
+- Different functions for changeing shutter intervalls
+- Bluetooth communication is in Bytes (8 Bit)s
+- ATtiny only has ineger ALU -> avoide floating point atithmetic
+### 4.1 Protocol
+- Since Bluetooth uses [CRC](https://return-false.de/archive/1098) , there is no need for parity check.
+- User Layer: Contains a *Start Sequence*, N *Functions* and a *Stop Sequence*. The The User can concatinate different *Functions* to get a piecewise continous function which dictates the shutter delay.
+| START | FUNC_1 | ... | FUNC_N | END |
+- Function Layer: There are different Functions, defined in tha Table below. *TYPE* encodes which *Function* and thus, how many bytes to expect. A *Function* is defined as a recursive series which encodes the time between the n-th and n-1-th shot. It is completely defined by its constants and for how many pictures this function is valide.
+| TYPE | CONST_1 | ... | CONST_M | 
+- Each function will be handeled like:
+```cpp
+for(int n = 0; n < n_max ; i++){	
+	activate_shutter();
+	int next_delay_ms = f(n);
+	go_sleep(next_delay_ms);
+}
+```
+
+| FUNCTION | Hex | Number of constants | Formular |
+| -------------- | ----- | --------------------------- | ------------ |
+| Constant   | 0x1 | 2 |f(0) = c<br>   f(n) = c ; n &isin; [0, n_max] |
+| Linear       | 0x2 | 3 |f(0) = c<br>   f(n) = f(n-1) + b ; n  &isin; [0, n_max] |
+| Quadratic   | 0x3 | 4 |f(0) = c<br>   f(n) =  f(n-1) a(n-1) + b ; n  &isin; [0, n_max] |
+
+- Bit Layer:
+
+| Symbol | Hex | Length in  Byte|
+| --------- | ------ | ------------------ |
+| START   | 0x0 | 1 |
+| STOP    | 0xF | 1 |
+| TYPE     | 0x1-0xE| 1|
+| CONST | value | 4 |
