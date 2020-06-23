@@ -28,7 +28,7 @@
 ### 4.1 Protocol
 - Since Bluetooth uses [CRC](https://return-false.de/archive/1098) , there is no need for parity check.
 - User Layer: Contains a *Start Sequence*, N *Functions* and a *Stop Sequence*. The The User can concatinate different *Functions* to get a piecewise continous function which dictates the shutter delay.
-| START | FUNC_1 | ... | FUNC_N | END |
+| FUNC_1 | ... | FUNC_N | END |
 - Function Layer: There are different Functions, defined in tha Table below. *TYPE* encodes which *Function* and thus, how many bytes to expect. A *Function* is defined as a recursive series which encodes the time between the n-th and n-1-th shot. It is completely defined by its constants and for how many pictures this function is valide.
 | TYPE | CONST_1 | ... | CONST_M | 
 - Each function will be handeled like:
@@ -50,7 +50,6 @@ for(int n = 0; n < n_max ; i++){
 
 | Symbol | Hex | Length in  Byte|
 | --------- | ------ | ------------------ |
-| START   | 0x0 | 1 |
 | STOP    | 0xF | 1 |
-| TYPE     | 0x1-0xE| 1|
-| CONST | value | 4 |
+| FUNCTION | 0x1-0xE| 1|
+| CONST | value | 4 (long) |
