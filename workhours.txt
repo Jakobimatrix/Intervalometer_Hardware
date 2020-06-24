@@ -8,4 +8,5 @@
 | Jakobimatrix | 20.06.2020 | 3h | Writeing Dokumentation, drawing beta scematics
 | Jakobimatrix | 21.06.2020 | 3h | research about bluetooth connection and begin writeing Java Class (Android)
 | Jakobimatrix | 22.06.2020 | 5h | formulateing functions to calculate shutter delay such that they only need integer arithmetic + Define Protokol for function transmition via Bluetooth + Dokumentation 
-| Jakobimatrix | 23.06.2021 | 6h | Sketch for ATtiny for intervalometer, not testet, not optimized
+| Jakobimatrix | 23.06.2020 | 6h | Sketch for ATtiny for intervalometer, not testet, not optimized
+| Jakobimatrix | 24.06.2020 | 11h| first version of App with working debug example
