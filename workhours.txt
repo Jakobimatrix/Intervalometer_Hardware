@@ -10,3 +10,4 @@
 | Jakobimatrix | 22.06.2020 | 5h | formulateing functions to calculate shutter delay such that they only need integer arithmetic + Define Protokol for function transmition via Bluetooth + Dokumentation 
 | Jakobimatrix | 23.06.2020 | 6h | Sketch for ATtiny for intervalometer, not testet, not optimized
 | Jakobimatrix | 24.06.2020 | 11h| first version of App with working debug example
+| Jakobimatrix | 25.06.2020 | 8.5h| fixed ATtiny read function. Fixed app crashes.
