@@ -20,30 +20,34 @@
 #include <avr/wdt.h>      // Watchdog timer
 
 // definitions of possible states fo the intervallometer
-const byte STATE_NO_INSTRUCTIONS = 0x0;
-const byte STATE_RECEIVEING_DATA = 0x1;
-const byte STATE_HOLD = 0x2;
-const byte STATE_RUN = 0x3;
-const byte STATE_FINISHED = 0x4;
-const byte STATE_ERROR_FAILED_DATA_TRANSFERE = 0xF;
+const byte STATE_NO_INSTRUCTIONS = 0x00;
+const byte STATE_RECEIVEING_DATA = 0x01;
+const byte STATE_HOLD = 0x02;
+const byte STATE_RUN = 0x03;
+const byte STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED = 0xFF;
+const byte STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR = 0xFE;
+const byte STATE_ERROR_MILLIS_OVERFLOW = 0xFD;
+const byte STATE_ERROR_NEGATIVE_DELAY = 0xFC;
 
 // definitions for status LED
-const int LED_NO_INSTRUCTIONS_ON_MS = 1000;
-const int LED_NO_INSTRUCTIONS_OFF_MS = 1000;
-const int LED_STATE_RECEIVEING_DATA_ON_MS = 300;
-const int LED_STATE_RECEIVEING_DATA_OFF_MS = 300;
-const int LED_STATE_HOLD_ON_MS = 1000;
-const int LED_STATE_HOLD_OFF_MS = 400;
-const int LED_FINISHED_ON_MS = 300;
-const int LED_FINISHED_OFF_MS = 300;
-const byte LED_FINISHED_RUN = 3;
-const int LED_FINISHED_PAUSE_MS = 1000;
+const int LED_NO_INSTRUCTIONS_ON_MS = 1700;
+const int LED_NO_INSTRUCTIONS_OFF_MS = 1700;
+const int LED_STATE_RECEIVEING_DATA_ON_MS = 333;
+const int LED_STATE_RECEIVEING_DATA_OFF_MS = 333;
+const int LED_STATE_HOLD_ON_MS = 333;
+const int LED_STATE_HOLD_OFF_MS = 333;
+const byte LED_STATE_HOLD_RUN = 3;
+const int LED_STATE_HOLD_PAUSE_MS = 1000;
+const int LED_ERROR_ON_MS = 1000;
+const int LED_ERROR_OFF_MS = 300;
+const int LED_ERROR_PAUSE_MS = 3000;
 
 // protocol definitions;
-const byte SYMBOL_STOP = 0xF;
-const byte SYMBOL_F_CONST = 0x1;
-const byte SYMBOL_F_LIN = 0x2;
-const byte SYMBOL_F_QUAD = 0x3;
+const byte SYMBOL_STOP = 0x00;
+const byte SYMBOL_STOP_SHUTDOWN = 0x0F;
+const byte SYMBOL_F_CONST = 0x01;
+const byte SYMBOL_F_LIN = 0x02;
+const byte SYMBOL_F_QUAD = 0x03;
 const byte NUM_BYTES_VALUE = 4;
 const byte NUM_VALUES_F_CONST = 2;
 const byte NUM_VALUES_F_LIN = 3;
@@ -86,7 +90,7 @@ const int getPtrBeginOffsetA(){
 
 // globals for status
 const byte HW_STATUS_LED = PB0;
-#define TRIGGER_DURATION_MS 300 // how many ms the trigger needs to be high to take a photo depends on the camera and the used transistor
+#define TRIGGER_DURATION_MS 100 // how many ms the trigger needs to be high to take a photo depends on the camera and the used transistor
 const byte HW_TRIGGER = PB1;
 #define HW_HOLD_SWITCH_HOLD_COND HIGH // define if pull up or pull down for HW_HOLD_SWITCH
 const byte HW_HOLD_SWITCH = PB2;
@@ -103,22 +107,25 @@ byte program[100];
 int program_pointer = 0; // pointer to the current function
 int read_pointer = 0; // pointer to the current read/write position
 int shot_counter = 0; // number of photos taken with the current function
-long last_shot_ms = 0; // last time a photo was taken
-long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
+unsigned long last_shot_ms = 0; // last time a photo was taken
+unsigned long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
 
- 
 SoftwareSerial blueToothSerial(RxD,TxD);
+
+const bool DEBUG = true;
 
 void setup() 
 { 
   //resetWatchdog();
   pinMode(RxD, INPUT);
   pinMode(TxD, OUTPUT);
-  setupBlueToothConnection();
+  enableBluetooth(true);
   
   pinMode(HW_STATUS_LED,OUTPUT);
   pinMode(HW_TRIGGER,OUTPUT);
-  pinMode(STATE_HOLD,INPUT);
+  pinMode(HW_HOLD_SWITCH,INPUT);
+  digitalWrite(HW_HOLD_SWITCH, HIGH);  //  enable pullup resistor (normally high)
+  
   digitalWrite(HW_STATUS_LED,HIGH);
   digitalWrite(HW_TRIGGER,LOW);
 } 
@@ -136,9 +143,6 @@ void loop()
     case STATE_RUN:
       checkIfHold();
       runIntervallometer();
-      break;
-      case STATE_FINISHED:
-      // TODO go to sleep LED NEEDS BLINKING NO INTERRUPT FROM HOLD
       break;
     default:
       // TODO go to sleep LED NEEDS BLINKING NO INTERRUPT FROM HOLD
@@ -161,10 +165,12 @@ void toggleStatusLed(){
  * is greater then a given periode.
  * \param periode The periode after which the LED should be toggled.
  */
-void toggleStatusLedIf(int periode){
+bool toggleStatusLedIf(int periode){
   if(millis() - status_led_last_toggle_ms > periode){
     toggleStatusLed();
+    return true;
   }
+  return false;
 }
 
 /*!
@@ -190,28 +196,36 @@ void statusLed(){
     case STATE_HOLD:
       if(led_is_on){
         toggleStatusLedIf(LED_STATE_HOLD_ON_MS);
+        num_runs_STATUS_LED++;
+      }else if(num_runs_STATUS_LED > LED_STATE_HOLD_RUN){
+        if(toggleStatusLedIf(LED_STATE_HOLD_PAUSE_MS)){
+           num_runs_STATUS_LED = 0;           
+        }
       }else{
         toggleStatusLedIf(LED_STATE_HOLD_OFF_MS);
       }
-      break;
+    break;      
     case STATE_RUN:
       if(led_is_on){
         toggleStatusLed();
       }
       break;
-      case STATE_FINISHED:
-        if(led_is_on){
-          toggleStatusLedIf(LED_FINISHED_ON_MS);
-          num_runs_STATUS_LED++;
-        }else if(num_runs_STATUS_LED > LED_FINISHED_RUN){
-          num_runs_STATUS_LED = 0;
-          toggleStatusLedIf(LED_FINISHED_PAUSE_MS);
-        }else{
-          toggleStatusLedIf(LED_FINISHED_OFF_MS);
-        }
-      break;
     default:
-      digitalWrite(HW_STATUS_LED,HIGH);
+      // ERROR CASES
+      // 0xFF-ERROR_CASE_HEX is the number of blinks before pause.
+        if(led_is_on){
+          if(num_runs_STATUS_LED > (0xFF - state_prog)){
+            if(toggleStatusLedIf(LED_ERROR_PAUSE_MS)){
+               num_runs_STATUS_LED = 0;           
+            }
+          }else{
+            toggleStatusLedIf(LED_ERROR_ON_MS);
+            num_runs_STATUS_LED++;
+          }
+        }else{
+          toggleStatusLedIf(LED_ERROR_OFF_MS);
+          num_runs_STATUS_LED++;
+        }
       break;
   }
 }
@@ -223,6 +237,7 @@ void statusLed(){
 void checkIfHold(){
   // No need to debounce.
   state_prog = (digitalRead(HW_HOLD_SWITCH) == HW_HOLD_SWITCH_HOLD_COND)?STATE_HOLD:STATE_RUN;
+
   // TODO set up watchdog
   // TODO go to sleep, wake up on pull down/up?
 }
@@ -232,21 +247,21 @@ void checkIfHold(){
  * \param function The Hex value of the function Symbol
  * \return the number of parameters of the requested function.
  * If END Symbol was given, 0 is returned.
- * If the given Hex does not belong to a function, 0xF will be returned.
+ * If the given Hex does not belong to a function, -1 will be returned.
  */
-byte getNumFunctionValues(byte function){
+int getNumFunctionValues(byte function){
  switch (function) {
     case SYMBOL_F_CONST:
-    return NUM_VALUES_F_CONST;
+    return (int) NUM_VALUES_F_CONST;
     case SYMBOL_F_LIN:
-    return NUM_VALUES_F_LIN;
+    return (int) NUM_VALUES_F_LIN;
     case SYMBOL_F_QUAD:
-    return NUM_VALUES_F_QUAD;
+    return (int) NUM_VALUES_F_QUAD;
     case SYMBOL_STOP:
+    case SYMBOL_STOP_SHUTDOWN:
     return 0; // End, no more values
  }
- state_prog = STATE_ERROR_FAILED_DATA_TRANSFERE;
- return 0;
+ return -1;
 }
 
 /*!
@@ -260,28 +275,57 @@ void runIntervallometer(){
   // shot_counter: how many pictures where taken with the current function
   // program[program_pointer+1]: numbers of pictures to take with this function
   // last_shot_ms: when the last shot was taken
+  if(shot_counter == 0 && program_pointer == 0){
+    // Take the very first picture without waiting.
+    // This is important to set last_shot_ms.
+    // The user must activate the hold switch before bluetooth transmittion to not start imediately.
+    takePhoto();
+    return;
+  }
   if(shot_counter >= readProgramValueAt(program_pointer + getPtrBeginOffsetNumShots())){
     program_pointer++;
   }
-  const long ms_since_last_pic = millis() - last_shot_ms;
-  long ms_until_next_pic;
-  switch (program[program_pointer]) {
-    case SYMBOL_F_CONST:
-      ms_until_next_pic = getShutterDelayConst() - ms_since_last_pic;
-      break;
-    case SYMBOL_F_LIN:
-      ms_until_next_pic = getShutterDelayLin()- ms_since_last_pic;
-      break;
-    case SYMBOL_F_QUAD:
-      ms_until_next_pic = getShutterDelayQuad()- ms_since_last_pic;
-      break;
-    case SYMBOL_STOP:
-      state_prog = STATE_FINISHED;
+  if(last_shot_ms > millis()){
+    state_prog = STATE_ERROR_MILLIS_OVERFLOW;
     return;
   }
-
-  // TODO go into deep_sleep for ms_until_next_pic using watchdog BUT LISTEN FOR HOLD
-  delay(ms_until_next_pic);
+  const unsigned long ms_since_last_pic = millis() - last_shot_ms;
+  unsigned long next_delay;
+  switch (program[program_pointer]) {
+    case SYMBOL_F_CONST:
+      next_delay = getShutterDelayConst();
+      break;
+    case SYMBOL_F_LIN:
+      next_delay = getShutterDelayLin();
+      break;
+    case SYMBOL_F_QUAD:
+      next_delay = getShutterDelayQuad();
+      break;
+    case SYMBOL_STOP:
+      state_prog = STATE_NO_INSTRUCTIONS;
+      // reset pointers for next read
+      read_pointer = 0;
+      shot_counter = 0;
+      enableBluetooth(true);
+      // TODO ENABLE BLUETOOTH
+      return;
+    case SYMBOL_STOP_SHUTDOWN:
+      state_prog = STATE_NO_INSTRUCTIONS;
+      // TODO SHUT DOWN
+      return;
+  }
+  if(next_delay < 0){
+    state_prog = STATE_ERROR_NEGATIVE_DELAY;
+    return;
+  }
+  const long ms_wait = next_delay - ms_since_last_pic;
+  byte bytes[4];
+  writeValueAt(bytes, ms_wait);
+  write(bytes, 4);
+  if(ms_wait>0){
+    // TODO go into deep_sleep for ms_until_next_pic using watchdog BUT LISTEN FOR HOLD
+    delay(ms_wait);
+  }
   takePhoto();
 }
 
@@ -309,10 +353,25 @@ long readProgramValueAt(int at){
 }
 
 /*!
+ * \brief writeValueAt Writes val into bytes.
+ * \param bytes Pointer to at byte array with at least 4 more places.
+ * \param val The value to wirite into the byte array.
+ */
+void writeValueAt(byte *bytes, long val){
+  *bytes = (byte)((val >> 24) & 0xFF);
+  bytes++;
+  *bytes = (byte)((val >> 16) & 0xFF);
+  bytes++;
+  *bytes = (byte)((val >> 8) & 0XFF);
+  bytes++;
+  *bytes = (byte)((val & 0XFF));
+} 
+
+/*!
  * \brief getShutterDelayConst Calculates the shutter delay for the n-th picture for a constant function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-long getShutterDelayConst(){
+unsigned long getShutterDelayConst(){
   //[ FUNC_SYMBOL | NUM_PICS | C ]
   // f(n) = f(n-1); f(0) = C;
   if(shot_counter == 0){
@@ -325,7 +384,7 @@ long getShutterDelayConst(){
  * \brief getShutterDelayLin Calculates the shutter delay for the n-th picture for a linear function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-long getShutterDelayLin(){
+unsigned long getShutterDelayLin(){
   //[ FUNC_SYMBOL | NUM_PICS | C | B ]
   // f(0) = C
   // f(n) = f(n-1) + B
@@ -341,7 +400,7 @@ long getShutterDelayLin(){
  * \brief getShutterDelayLin Calculates the shutter delay for the n-th picture for a quadratic function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-long getShutterDelayQuad(){
+unsigned long getShutterDelayQuad(){
   //[ FUNC_SYMBOL | NUM_PICS | C | B | A ]
   // f(0) = C
   // f(n) = f(n-1) + A(n-1) + B
@@ -355,7 +414,17 @@ long getShutterDelayQuad(){
   }
   return f_nm1;
 }
- 
+
+
+void enableBluetooth(bool enable){
+  if(enable){
+    // todo connect hardware
+    setupBlueToothConnection();
+  }else{
+    shutDownBluetooth();
+    // todo disconnect hardware
+  }
+}
  
 void setupBlueToothConnection()
 {
@@ -374,6 +443,14 @@ void setupBlueToothConnection()
 }
 
 /*!
+ * \brief isSymbolStopAtProgramCounter
+ * \return True if the currend Symbol the program_pointer points to is a Stop Symbol
+ */
+bool isSymbolStopAtProgramCounter(){
+  return (program[program_pointer] == SYMBOL_STOP || program[program_pointer] == SYMBOL_STOP_SHUTDOWN);
+}
+
+/*!
  * \brief read Reads the next bit send via bluetooth if avaiable and
  * CHANGES the state to STATE_HOLD if the SYMBOL_STOP was received.
  */
@@ -383,26 +460,55 @@ void read(){
     state_prog = STATE_RECEIVEING_DATA;
     program[read_pointer] = blueToothSerial.read();
 
-    const int diff = (read_pointer - program_pointer);
-    const int num_expected_bytes = (int) getNumFunctionValues(program[program_pointer]) * (int) NUM_BYTES_VALUE;
-    if(diff == 0 && num_expected_bytes == 0 && program[program_pointer] == SYMBOL_STOP){
-      // Stop symbol received; transmission successful.
-      // Reset the program pointers.
-      program_pointer = 0;
-      read_pointer = 0;
-      checkIfHold();
-      shutDownBluetooth();
+    const int diff = (int) (read_pointer - program_pointer);
+    const int num_expected_bytes = getNumFunctionValues(program[program_pointer]) * (int) NUM_BYTES_VALUE;
+    if(diff == num_expected_bytes && !isSymbolStopAtProgramCounter()){
+      // We read the last byte of the current function and it was not the SYMBOL_STOP. 
+      // Set program_pointer to the position were the next function will be.
+      program_pointer = program_pointer + diff + 1;
+    }else if(diff > num_expected_bytes){
+      // For some reason the read_pointer is outside the function at which program_pointer points.
+      // That means, we somehow jumped over if(diff == num_expected_bytes).
+      // So either read_pointer or program_pointer were altered without my consent.
+      state_prog = STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR;
       return;
+    } else if(diff < 0){
+      // That means that the program_pointer is ahead of the read_pointer which should never happen.
+      state_prog = STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR;
+      return;   
+    }else if(diff == 0){
+      // We just read the next Function Symbol
+      if(isSymbolStopAtProgramCounter()){
+        // Stop symbol received; transmission successful.
+        // Reset the program pointers.
+        program_pointer = 0;
+        read_pointer = 0;
+        enableBluetooth(false);
+        checkIfHold();
+        return;
+      }else if(num_expected_bytes < 0){
+        // We read a new Function Symbol but it was not a valide Symbol.
+        // If the number of expected bytes is below zero a unknown Symbol was transmitted.
+        state_prog = STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED;
+
+        byte data[4];
+        data[0] = 0;
+        data[1] = 0;
+        data[2] = 0;
+        data[3] = program[program_pointer];
+        write(data, 4);
+        
+        return;
+      }       
     }
-    
-    if(diff == num_expected_bytes){
-      // we read the last byte of the current function
-      program_pointer++;
-    }else if(diff > num_expected_bytes || diff < 0 || num_expected_bytes == 0){
-      state_prog = STATE_ERROR_FAILED_DATA_TRANSFERE;
-      return;
-    }
+
     read_pointer++;
+  }
+}
+
+void write(byte *data, int length){
+  if(DEBUG){
+    blueToothSerial.write(data, length);
   }
 }
 
@@ -411,7 +517,10 @@ void read(){
  * \brief shutDownBluetooth releases the Pins from beeing RX and Tx and makes the gpios
  */
 void shutDownBluetooth(){
-  blueToothSerial.end();
+  if(!DEBUG){
+    // TODO
+    blueToothSerial.end();
+  }
 }
 
 //

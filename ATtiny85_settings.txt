@@ -25,7 +25,7 @@
 - Different functions for changeing shutter intervalls
 - Bluetooth communication is in Bytes (8 Bit)s
 - ATtiny only has ineger ALU -> avoide floating point atithmetic
-### 4.1 Protocol
+### 4.1 Protocol Handy -> ATtiny
 - Since Bluetooth uses [CRC](https://return-false.de/archive/1098) , there is no need for parity check.
 - User Layer: Contains a *Start Sequence*, N *Functions* and a *Stop Sequence*. The The User can concatinate different *Functions* to get a piecewise continous function which dictates the shutter delay.
 | FUNC_1 | ... | FUNC_N | END |
@@ -42,14 +42,33 @@ for(int n = 0; n < n_max ; i++){
 
 | FUNCTION | Hex | Number of constants | Formular |
 | -------------- | ----- | --------------------------- | ------------ |
-| Constant   | 0x1 | 2 |f(0) = c<br>   f(n) = c ; n &isin; [0, n_max] |
-| Linear       | 0x2 | 3 |f(0) = c<br>   f(n) = f(n-1) + b ; n  &isin; [0, n_max] |
-| Quadratic   | 0x3 | 4 |f(0) = c<br>   f(n) =  f(n-1) a(n-1) + b ; n  &isin; [0, n_max] |
+| Constant   | 0x01 | 2 |f(0) = c<br>   f(n) = c ; n &isin; [0, n_max] |
+| Linear       | 0x02 | 3 |f(0) = c<br>   f(n) = f(n-1) + b ; n  &isin; [0, n_max] |
+| Quadratic   | 0x03 | 4 |f(0) = c<br>   f(n) =  f(n-1) a(n-1) + b ; n  &isin; [0, n_max] |
 
 - Bit Layer:
 
 | Symbol | Hex | Length in  Byte|
 | --------- | ------ | ------------------ |
-| STOP    | 0xF | 1 |
-| FUNCTION | 0x1-0xE| 1|
-| CONST | value | 4 (long) |
+| STOP    | 0x00 | 1 |
+| STOP_AND_SHUTDOWN   | 0x0F | 1 |
+| FUNCTION | 0x01-0x03| 1|
+| CONST | 0x00-0xFF | 4 (long) |
+
+### 4.2 ATtiny Protocol -> Handy
+- Single Debug Information [DBG_TYP|BYTES]
+- thouse define what kind of variable to expect and how many bytes
+
+| Symbol | Hex | number  following BYTES|
+| --------- | ------ | ------------------ |
+| DEBUG_CURRENT_STATE  | 0x00 | 1 |
+| DEBUG_CURRENT_MILLIS   | 0x01 | 4 |
+| DEBUG_GOING_TO_SLEEP_FOR_MS | 0x02| 4 |
+| DEBUG_CURRENT_FUNCTION | 0x03 | Defined over following TYPE (next byte) see above |
+| DEBUG_CHAR_SEQUENCE | 0x04 | 4 (long) |
+
+### 4.3 On Converstaion
+- A **byte** in C is 0-255
+- A **byte** in Java is -128 - 127
+- A **long** on the ATtiny has 4 byte
+- A **int** in Java has 4 byte
