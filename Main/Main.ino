@@ -106,13 +106,109 @@ byte program[100];
 // Points to the current index of the program.
 int program_pointer = 0; // pointer to the current function
 int read_pointer = 0; // pointer to the current read/write position
-int shot_counter = 0; // number of photos taken with the current function
+unsigned long shot_counter = 0; // number of photos taken with the current function
 unsigned long last_shot_ms = 0; // last time a photo was taken
 unsigned long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
 
 SoftwareSerial blueToothSerial(RxD,TxD);
 
 const bool DEBUG = true;
+
+void loadExampleProgramConst(){
+  // function (Const)
+  program[0] = SYMBOL_F_CONST;
+  // number of photos (10 + 1)
+  program[1] = 0x0;
+  program[2] = 0x0;
+  program[3] = 0x0;
+  program[4] = 0x0A;
+  // Constant C (500) in ms
+  program[5] = 0x00;
+  program[6] = 0x00;
+  program[7] = 0x01;
+  program[8] = 0xF4;
+  // next function = end
+  program[9] = SYMBOL_STOP_SHUTDOWN;
+  resetProgram();
+  state_prog = STATE_HOLD;
+}
+
+void loadExampleProgramLin(){
+  // function (Const)
+  program[0] = SYMBOL_F_LIN;
+  // number of photos (10 + 1)
+  program[1] = 0x0;
+  program[2] = 0x0;
+  program[3] = 0x0;
+  program[4] = 0x0A;
+  // Constant C (500) in ms
+  program[5] = 0x00;
+  program[6] = 0x00;
+  program[7] = 0x01;
+  program[8] = 0xF4;
+  // Constant B (gradient) (100) in ms
+  program[9] = 0x00;
+  program[10] = 0x00;
+  program[11] = 0x00;
+  program[12] = 0x64;
+  // next function = end
+  program[13] = SYMBOL_STOP_SHUTDOWN;
+  resetProgram();
+  state_prog = STATE_HOLD;
+}
+
+void loadExampleProgramLin2(){
+  // function (Const)
+  program[0] = SYMBOL_F_LIN;
+  // number of photos (10 + 1)
+  program[1] = 0x0;
+  program[2] = 0x0;
+  program[3] = 0x0;
+  program[4] = 0x0A;
+  // Constant C (1600) in ms
+  program[5] = 0x00;
+  program[6] = 0x00;
+  program[7] = 0x06;
+  program[8] = 0x40;
+  // Constant B (gradient) (-100) in ms
+  program[9] = 0xFF;
+  program[10] = 0xFF;
+  program[11] = 0xFF;
+  program[12] = ~0x64 + 1;
+  // next function = end
+  program[13] = SYMBOL_STOP_SHUTDOWN;
+  resetProgram();
+  state_prog = STATE_HOLD;
+}
+
+void loadExampleProgramQuad(){
+  // function (Const)
+  program[0] = SYMBOL_F_QUAD;
+  // number of photos (15 + 1)
+  program[1] = 0x0;
+  program[2] = 0x0;
+  program[3] = 0x0;
+  program[4] = 0x0F;
+  // Constant C (500) in ms
+  program[5] = 0x00;
+  program[6] = 0x00;
+  program[7] = 0x01;
+  program[8] = 0xF4;
+  // Constant B (gradient) (100) in ms
+  program[9] = 0x00;
+  program[10] = 0x00;
+  program[11] = 0x00;
+  program[12] = 0x64;
+  // Constant A (curvature) (100) in ms
+  program[13] = 0x00;
+  program[14] = 0x00;
+  program[15] = 0x00;
+  program[16] = 0x32;
+  // next function = end
+  program[17] = SYMBOL_STOP_SHUTDOWN;
+  resetProgram();
+  state_prog = STATE_HOLD;
+}
 
 void setup() 
 { 
@@ -126,9 +222,13 @@ void setup()
   pinMode(HW_HOLD_SWITCH,INPUT);
   digitalWrite(HW_HOLD_SWITCH, HIGH);  //  enable pullup resistor (normally high)
   
-  digitalWrite(HW_STATUS_LED,HIGH);
+  digitalWrite(HW_STATUS_LED,LOW);
   digitalWrite(HW_TRIGGER,LOW);
-} 
+
+  //loadExampleProgramConst();
+  //loadExampleProgramLin2();
+  //loadExampleProgramQuad();
+}
  
 void loop()
 {
@@ -149,6 +249,18 @@ void loop()
       break;
   }
   statusLed();
+}
+
+/*!
+ * \brief resetProgram Prepares all global variables necessary to start reading (executeing) or writeing (receiveing) a program.
+ */
+void resetProgram(){
+  program_pointer = 0; // pointer to the current function
+  read_pointer = 0; // pointer to the current read/write position
+  shot_counter = 0; // number of photos taken with the current function
+  last_shot_ms = 0; // last time a photo was taken
+  f_nm1 = -1; // last value of the recursive function determineing the delay between shots
+  // I set that one to -1 because if it does not get set before the first calculation, something went wrong since -1 is not valide.
 }
 
 /*!
@@ -270,26 +382,26 @@ int getNumFunctionValues(byte function){
  * not altered while the program runs. A class structure would be nice but eh...
  */
 void runIntervallometer(){
-  // program[read_pointer];
   // program[program_pointer]: points to the current function
   // shot_counter: how many pictures where taken with the current function
-  // program[program_pointer+1]: numbers of pictures to take with this function
   // last_shot_ms: when the last shot was taken
-  if(shot_counter == 0 && program_pointer == 0){
+  if(program_pointer == 0 && shot_counter == 0){
     // Take the very first picture without waiting.
-    // This is important to set last_shot_ms.
+    // This also sets last_shot_ms to a valide value.
     // The user must activate the hold switch before bluetooth transmittion to not start imediately.
     takePhoto();
-    return;
+    // dont count the very first picture
+    shot_counter = 0;
+    // now prepare the next ms_wait
   }
-  if(shot_counter >= readProgramValueAt(program_pointer + getPtrBeginOffsetNumShots())){
-    program_pointer++;
+  if(shot_counter >= readUnsignedProgramValueAt(program_pointer + getPtrBeginOffsetNumShots())){
+    setProgramPointerToNextFunction();
+    shot_counter = 0; // reset to count the shots of the next function
   }
   if(last_shot_ms > millis()){
     state_prog = STATE_ERROR_MILLIS_OVERFLOW;
     return;
   }
-  const unsigned long ms_since_last_pic = millis() - last_shot_ms;
   unsigned long next_delay;
   switch (program[program_pointer]) {
     case SYMBOL_F_CONST:
@@ -304,29 +416,56 @@ void runIntervallometer(){
     case SYMBOL_STOP:
       state_prog = STATE_NO_INSTRUCTIONS;
       // reset pointers for next read
-      read_pointer = 0;
-      shot_counter = 0;
-      enableBluetooth(true);
+      resetProgram();
+      //enableBluetooth(true);
       // TODO ENABLE BLUETOOTH
       return;
     case SYMBOL_STOP_SHUTDOWN:
       state_prog = STATE_NO_INSTRUCTIONS;
-      // TODO SHUT DOWN
+      // TODO SHUTDOWN or go in sleep
       return;
   }
+
   if(next_delay < 0){
     state_prog = STATE_ERROR_NEGATIVE_DELAY;
     return;
   }
-  const long ms_wait = next_delay - ms_since_last_pic;
+  const unsigned long ms_since_last_pic = millis() - last_shot_ms;
+  const unsigned long ms_wait = next_delay - ms_since_last_pic;
   byte bytes[4];
   writeValueAt(bytes, ms_wait);
   write(bytes, 4);
-  if(ms_wait>0){
+  
+  if(ms_wait >  0){
     // TODO go into deep_sleep for ms_until_next_pic using watchdog BUT LISTEN FOR HOLD
     delay(ms_wait);
   }
   takePhoto();
+}
+
+void debugBits(long debug, int num_bits){
+  digitalWrite(HW_TRIGGER,LOW);
+  for(int i = 0; i < num_bits; i++){
+    //on
+    digitalWrite(HW_TRIGGER,HIGH);
+    delay(100);
+    digitalWrite(HW_TRIGGER,LOW);
+    delay(100);
+    digitalWrite(HW_TRIGGER,HIGH);
+    delay(100);
+    digitalWrite(HW_TRIGGER,LOW);
+    delay(100);
+    unsigned long state = debug & 0b1;
+    debug = debug >> 1;
+    if(state == 1){
+      digitalWrite(HW_TRIGGER,HIGH);
+    }else{
+      digitalWrite(HW_TRIGGER,LOW);
+    }
+    delay(1000);
+  }
+  digitalWrite(HW_TRIGGER,LOW);
+  delay(5000);
 }
 
 /*!
@@ -343,13 +482,28 @@ void takePhoto(){
 }
 
 /*!
- * \brief readProgramValueAt converts beginning from at the next 4 bytes into an int
+ * \brief readProgramValueAt converts beginning from at the next 4 bytes into an long
  */
 long readProgramValueAt(int at){
-  return (long)( (program[at] << 24) 
-               + (program[at+1] << 16) 
-               + (program[at+2] << 8) 
-               + (program[at+3] ) );
+  // unsigned long does not have a shift operator
+  return ((long)(program[at]) << 24) 
+       | ((long)(program[at+1]) << 16) 
+       | ((long)(program[at+2]) << 8) 
+       | ((long)(program[at+3]) );
+}
+
+/*!
+ * \brief readProgramValueAt converts beginning from at the next 4 bytes into an unsigned long
+ */
+unsigned long readUnsignedProgramValueAt(int at){
+  return readProgramValueAt(at);
+}
+
+/*!
+ * \brief setProgramPointerToNextFunction Increases the program_pointer about the number of bytes defineing the current function it points at + 1.
+ */
+void setProgramPointerToNextFunction(){
+  program_pointer += getNumFunctionValues(program[program_pointer]) * (int) NUM_BYTES_VALUE + 1;
 }
 
 /*!
@@ -375,7 +529,7 @@ unsigned long getShutterDelayConst(){
   //[ FUNC_SYMBOL | NUM_PICS | C ]
   // f(n) = f(n-1); f(0) = C;
   if(shot_counter == 0){
-    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC);
+    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC());
   }
   return f_nm1;
 }
@@ -440,6 +594,10 @@ void setupBlueToothConnection()
   
   delay(2000); // This delay is required.
   blueToothSerial.flush();
+
+  // to fill the 3 missing bytes
+  byte bytes[3];
+  write(bytes, 3);
 }
 
 /*!
@@ -465,7 +623,7 @@ void read(){
     if(diff == num_expected_bytes && !isSymbolStopAtProgramCounter()){
       // We read the last byte of the current function and it was not the SYMBOL_STOP. 
       // Set program_pointer to the position were the next function will be.
-      program_pointer = program_pointer + diff + 1;
+      setProgramPointerToNextFunction();
     }else if(diff > num_expected_bytes){
       // For some reason the read_pointer is outside the function at which program_pointer points.
       // That means, we somehow jumped over if(diff == num_expected_bytes).
@@ -481,10 +639,9 @@ void read(){
       if(isSymbolStopAtProgramCounter()){
         // Stop symbol received; transmission successful.
         // Reset the program pointers.
-        program_pointer = 0;
-        read_pointer = 0;
-        enableBluetooth(false);
+        resetProgram();
         checkIfHold();
+        enableBluetooth(false);
         return;
       }else if(num_expected_bytes < 0){
         // We read a new Function Symbol but it was not a valide Symbol.
