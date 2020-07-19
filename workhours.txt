@@ -15,3 +15,4 @@
 | Jakobimatrix | 16.07.2020 | 4h | Figureing out OpenGL
 | Jakobimatrix | 17.07.2020 | 5h | failing at openGL
 | Jakobimatrix | 18.07.2020 | 11h| first workable and scalable rendering + commentary
+| Jakobimatrix | 19.07.2020 | 11h| adding more drawables, fixing renderer drawable handling
