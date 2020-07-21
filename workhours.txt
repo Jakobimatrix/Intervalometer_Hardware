@@ -17,3 +17,4 @@
 | Jakobimatrix | 18.07.2020 | 11h| first workable and scalable rendering + commentary
 | Jakobimatrix | 19.07.2020 | 11h| adding more drawables, fixing renderer drawable handling
 | Jakobimatrix | 20.07.2020 | 4h | drawable CoordinateSystem for funcion display + homography
+| Jakobimatrix | 21.07.2020 | 10h| fixing stuff adding stuff deleting stuff and crying
