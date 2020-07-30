@@ -21,3 +21,4 @@
 | Jakobimatrix | 22.07.2020 | 8h | haveing a working Coordinate system and functions
 | Jakobimatrix | 28.07.2020 | 9h | first manipulable functions
 | Jakobimatrix | 29.07.2020 | 6.5h| manipulable function finnished, begin text and number rendering (for axis label)
+| Jakobimatrix | 30.07.2020 | 3h | implement drawable char and texture class
