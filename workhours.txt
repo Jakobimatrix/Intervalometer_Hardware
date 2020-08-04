@@ -24,3 +24,4 @@
 | Jakobimatrix | 30.07.2020 | 3h | implement drawable char and texture class
 | Jakobimatrix | 31.07.2020 | 4h | textures working but not with triangles together
 | Jakobimatrix | 01.07.2020 | 2h | Fix bug with help from stackoverflow power.
+| Jakobimatrix | 04.07.2020 | 7h | Chars drawn as texture, Implemented String class to draw texture strings, add ticks to coordinate system
