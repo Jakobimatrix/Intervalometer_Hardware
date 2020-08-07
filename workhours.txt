@@ -27,3 +27,4 @@
 | Jakobimatrix | 04.07.2020 | 7h | Chars drawn as texture, Implemented String class to draw texture strings, add ticks to coordinate system
 | Jakobimatrix | 05.07.2020 | 4h | Improved touch sensitivity and ergonomics
 | Jakobimatrix | 06.08.2020 | 7h | Fix ticks, add snap to grid, write comments, implements coupled/synchronized functions
+| Jakobimatrix | 07.08.2020 | 5h | Restructure functions, add sigmoid fake
