@@ -28,3 +28,5 @@
 | Jakobimatrix | 05.07.2020 | 4h | Improved touch sensitivity and ergonomics
 | Jakobimatrix | 06.08.2020 | 7h | Fix ticks, add snap to grid, write comments, implements coupled/synchronized functions
 | Jakobimatrix | 07.08.2020 | 5h | Restructure functions, add sigmoid fake
+| Jakobimatrix | 08.08.2020 | 5h | Fixing and restructuring
+
