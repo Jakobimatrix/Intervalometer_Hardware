@@ -29,4 +29,5 @@
 | Jakobimatrix | 06.08.2020 | 7h | Fix ticks, add snap to grid, write comments, implements coupled/synchronized functions
 | Jakobimatrix | 07.08.2020 | 5h | Restructure functions, add sigmoid fake
 | Jakobimatrix | 08.08.2020 | 5h | Fixing and restructuring
-
+| Jakobimatrix | 11.08.2020 | 7h | new interface to move manipulators via arrow keys
+| Jakobimatrix | 12.08.2020 | 8h | moving with touch + arrow now possible, fixing visual and logical bugs
