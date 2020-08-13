@@ -31,3 +31,4 @@
 | Jakobimatrix | 08.08.2020 | 5h | Fixing and restructuring
 | Jakobimatrix | 11.08.2020 | 7h | new interface to move manipulators via arrow keys
 | Jakobimatrix | 12.08.2020 | 8h | moving with touch + arrow now possible, fixing visual and logical bugs
+| Jakobimatrix | 13.08.2020 | 11h| Implements add-function button over each manipulator featuring dynamic button positioning Class
