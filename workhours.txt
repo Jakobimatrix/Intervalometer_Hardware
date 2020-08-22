@@ -36,3 +36,4 @@
 | Jakobimatrix | 17.08.2020 | 6h | Bug fixes, visual fixes
 | Jakobimatrix | 19.08.2020 | 2.5h| Implement DB, read and write
 | Jakobimatrix | 20.08.2020 | 8h | finish implementation of DB, add Info window
+| Jakobimatrix | 21.08.2020 | 12h| stupid xml, settings page, launch icon
