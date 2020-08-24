@@ -38,3 +38,4 @@
 | Jakobimatrix | 20.08.2020 | 8h | finish implementation of DB, add Info window
 | Jakobimatrix | 21.08.2020 | 12h| stupid xml, settings page, launch icon
 | Jakobimatrix | 22.08.2020 | 3h | Fix Bluetooth connection and function generation > v1.0a
+| Jakobimatrix | 22.08.2020 | 8h | better GUI haptic, fix visual bugs and crashings, improve buttons
