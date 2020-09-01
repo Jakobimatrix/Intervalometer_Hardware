@@ -171,6 +171,7 @@ void loadExampleProgramLin2(){
   program[7] = 0x06;
   program[8] = 0x40;
   // Constant B (gradient) (-100) in ms
+  // Two's complement: invert all bits and add 1
   program[9] = 0xFF;
   program[10] = 0xFF;
   program[11] = 0xFF;
@@ -432,9 +433,6 @@ void runIntervallometer(){
   }
   const unsigned long ms_since_last_pic = millis() - last_shot_ms;
   const unsigned long ms_wait = next_delay - ms_since_last_pic;
-  byte bytes[4];
-  writeValueAt(bytes, ms_wait);
-  write(bytes, 4);
   
   if(ms_wait >  0){
     // TODO go into deep_sleep for ms_until_next_pic using watchdog BUT LISTEN FOR HOLD
@@ -472,13 +470,11 @@ void debugBits(long debug, int num_bits){
  * \brief takePhoto triggers the trigger to take a photo and keeps track when the foto was taken.
  */
 void takePhoto(){
-  // make sure the LED does not emit light (it should be off anyway)
-  digitalWrite(HW_STATUS_LED, LOW);
   digitalWrite(HW_TRIGGER,HIGH);
+  last_shot_ms = millis();
+  shot_counter++;
   delay(TRIGGER_DURATION_MS);
   digitalWrite(HW_TRIGGER,LOW);
-  shot_counter++;
-  last_shot_ms = millis();
 }
 
 /*!

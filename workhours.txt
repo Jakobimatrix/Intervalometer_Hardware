@@ -39,3 +39,4 @@
 | Jakobimatrix | 21.08.2020 | 12h| stupid xml, settings page, launch icon
 | Jakobimatrix | 22.08.2020 | 3h | Fix Bluetooth connection and function generation > v1.0a
 | Jakobimatrix | 22.08.2020 | 8h | better GUI haptic, fix visual bugs and crashings, improve buttons
+| Jakobimatrix | 31.08.2020 | 8h | Seting up PI to measure shutter delay, writeing edge detection function using ADC, learning vim
