@@ -1,0 +1,3 @@
+[submodule "Main/TinySnore"]
+	path = Main/TinySnore
+	url = git@github.com:Jakobimatrix/TinySnore.git

@@ -1,4 +1,3 @@
-
 // ATtiny85 Intervallometer. Function dictateing the intervalls between shots via Bluetooth and App for remote triggered time lapse.
 // Author: Jakob Wandel
 // Date: 22.06.2020
@@ -14,10 +13,15 @@
 //        GND  4|    |5  PB0 HW_STATUS_LED
 //              +----+
 
+#include "Arduino.h"
 #include <SoftwareSerial.h>  //Software Serial Port
-#include <avr/sleep.h>    // Sleep Modes
 #include <avr/power.h>    // Power management
-#include <avr/wdt.h>      // Watchdog timer
+
+// by Connor Nishijima
+#include "TinySnore/src/tinysnore.h"
+// If included via submodule (not using Arduino libraries) I need this include too for some reason:
+#include "TinySnore/src/tinysnore.cpp"
+
 
 // definitions of possible states fo the intervallometer
 const byte STATE_NO_INSTRUCTIONS = 0x00;
@@ -32,8 +36,8 @@ const byte STATE_ERROR_NEGATIVE_DELAY = 0xFC;
 // definitions for status LED
 const int LED_NO_INSTRUCTIONS_ON_MS = 1700;
 const int LED_NO_INSTRUCTIONS_OFF_MS = 1700;
-const int LED_STATE_RECEIVEING_DATA_ON_MS = 333;
-const int LED_STATE_RECEIVEING_DATA_OFF_MS = 333;
+const int LED_STATE_RECEIVEING_DATA_ON_MS = 10;
+const int LED_STATE_RECEIVEING_DATA_OFF_MS = 10;
 const int LED_STATE_HOLD_ON_MS = 333;
 const int LED_STATE_HOLD_OFF_MS = 333;
 const byte LED_STATE_HOLD_RUN = 3;
@@ -102,7 +106,7 @@ byte num_runs_STATUS_LED = 0;
 
 // Stores the program send via bluetooth.
 // This array should use all the avaiable memory.
-byte program[100];
+byte program[50];
 // Points to the current index of the program.
 int program_pointer = 0; // pointer to the current function
 int read_pointer = 0; // pointer to the current read/write position
@@ -226,9 +230,12 @@ void setup()
   digitalWrite(HW_STATUS_LED,LOW);
   digitalWrite(HW_TRIGGER,LOW);
 
-  //loadExampleProgramConst();
-  //loadExampleProgramLin2();
-  //loadExampleProgramQuad();
+  // disable unused peripherie
+  // disable ADC
+  ADCSRA = 0;  
+  power_adc_disable ();
+  // disable Universal Serial Interface 
+  power_usi_disable();
 }
  
 void loop()
@@ -327,7 +334,7 @@ void statusLed(){
       // ERROR CASES
       // 0xFF-ERROR_CASE_HEX is the number of blinks before pause.
         if(led_is_on){
-          if(num_runs_STATUS_LED > (0xFF - state_prog)){
+          if(num_runs_STATUS_LED > (0xFF - state_prog - 1)){
             if(toggleStatusLedIf(LED_ERROR_PAUSE_MS)){
                num_runs_STATUS_LED = 0;           
             }
@@ -431,12 +438,12 @@ void runIntervallometer(){
     state_prog = STATE_ERROR_NEGATIVE_DELAY;
     return;
   }
+  // TODO millis() is on hold while snorring so it did not cout TRIGGER_DURATION_MS?
   const unsigned long ms_since_last_pic = millis() - last_shot_ms;
   const unsigned long ms_wait = next_delay - ms_since_last_pic;
   
   if(ms_wait >  0){
-    // TODO go into deep_sleep for ms_until_next_pic using watchdog BUT LISTEN FOR HOLD
-    delay(ms_wait);
+    snore(ms_wait);
   }
   takePhoto();
 }
@@ -473,7 +480,7 @@ void takePhoto(){
   digitalWrite(HW_TRIGGER,HIGH);
   last_shot_ms = millis();
   shot_counter++;
-  delay(TRIGGER_DURATION_MS);
+  snore(TRIGGER_DURATION_MS);
   digitalWrite(HW_TRIGGER,LOW);
 }
 
@@ -675,52 +682,3 @@ void shutDownBluetooth(){
     blueToothSerial.end();
   }
 }
-
-//
-//// ?
-//// http://gammon.com.au/forum/?id=11497&reply=6#reply6Posteingangx
-//ISR (PCINT0_vect) 
-//{
-// // do something interesting here
-//}
-//
-//// ?
-//// http://gammon.com.au/forum/?id=11497&reply=6#reply6Posteingangx
-//// watchdog interrupt
-//ISR (WDT_vect) 
-//{
-//   wdt_disable();  // disable watchdog
-//   // WAKE UP? TODO 
-//}
-//
-//
-//// reset the watchdog for TODO millisecconds
-//// http://gammon.com.au/forum/?id=11497&reply=6#reply6Posteingangx
-//void resetWatchdog()
-//{
-//  // clear various "reset" flags
-//  MCUSR = 0;     
-//  // allow changes, disable reset, clear existing interrupt
-//  WDTCR = bit(WDCE) | bit(WDE) | bit(WDIF);
-//  // set interrupt mode and an interval (WDE must be changed from 1 to 0 here)
-//  WDTCR = bit(WDIE) | bit(WDP3) | bit(WDP0);    // set WDIE, and 8 seconds delay
-//  // pat the dog
-//  wdt_reset();  
-//}
-//
-//
-//// put to sleep mode with watchdog on
-//// http://gammon.com.au/forum/?id=11497&reply=6#reply6Posteingangx
-//void goToSleep()
-//{
-//  set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-//  ADCSRA = 0;            // turn off ADC
-//  power_all_disable();  // power off ADC, Timer 0 and 1, serial interface
-//  noInterrupts();       // timed sequence coming up
-//  resetWatchdog();      // get watchdog ready
-//  sleep_enable();       // ready to sleep
-//  interrupts();         // interrupts are required now
-//  sleep_cpu();          // sleep                
-//  sleep_disable();      // precaution
-//  power_all_enable();   // power everything back on
-//}
