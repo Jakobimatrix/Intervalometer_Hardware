@@ -332,9 +332,9 @@ void statusLed(){
       break;
     default:
       // ERROR CASES
-      // 0xFF-ERROR_CASE_HEX is the number of blinks before pause.
+      // 0xFF-ERROR_CASE_HEX + 1 is the number of blinks before pause.
         if(led_is_on){
-          if(num_runs_STATUS_LED > (0xFF - state_prog - 1)){
+          if(num_runs_STATUS_LED > (0xFF - state_prog + 1)){
             if(toggleStatusLedIf(LED_ERROR_PAUSE_MS)){
                num_runs_STATUS_LED = 0;           
             }
@@ -440,7 +440,7 @@ void runIntervallometer(){
   }
   // TODO millis() is on hold while snorring so it did not cout TRIGGER_DURATION_MS?
   const unsigned long ms_since_last_pic = millis() - last_shot_ms;
-  const unsigned long ms_wait = next_delay - ms_since_last_pic;
+  const unsigned long ms_wait = next_delay - (ms_since_last_pic + TRIGGER_DURATION_MS);
   
   if(ms_wait >  0){
     snore(ms_wait);
@@ -583,8 +583,7 @@ void enableBluetooth(bool enable){
   }
 }
  
-void setupBlueToothConnection()
-{
+void setupBlueToothConnection(){
   blueToothSerial.begin(9600); //Set BluetoothBee BaudRate to default baud rate 38400
   blueToothSerial.print("\r\n+STWMOD=0\r\n"); //set the bluetooth work in slave mode
   blueToothSerial.print("\r\n+STNA=HC-05\r\n"); //set the bluetooth name as "HC-05"
