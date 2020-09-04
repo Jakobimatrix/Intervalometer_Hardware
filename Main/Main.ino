@@ -28,11 +28,13 @@ const byte STATE_NO_INSTRUCTIONS = 0x00;
 const byte STATE_RECEIVEING_DATA = 0x01;
 const byte STATE_HOLD = 0x02;
 const byte STATE_RUN = 0x03;
-const byte STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED = 0xFF;
-const byte STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR = 0xFE;
-const byte STATE_ERROR_MILLIS_OVERFLOW = 0xFD;
-const byte STATE_ERROR_NEGATIVE_DELAY = 0xFC;
-const byte STATE_ERROR_PROGR_TOO_LONG = 0xFB;
+const byte STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED = 0xFF;       // 1
+const byte STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR = 0xFE;  // 2
+const byte STATE_ERROR_MILLIS_OVERFLOW = 0xFD;                // 3
+const byte STATE_ERROR_NEGATIVE_DELAY = 0xFC;                 // 4
+const byte STATE_ERROR_PROGR_TOO_LONG = 0xFB;                 // 5
+const byte STATE_ERROR_RECEIVING_TOO_LONG = 0xFA;             // 6
+const long MAX_RECEIVING_TIME_MS = 3000;
 
 // definitions for status LED
 const int LED_NO_INSTRUCTIONS_ON_MS = 1700;
@@ -43,7 +45,7 @@ const int LED_STATE_HOLD_ON_MS = 333;
 const int LED_STATE_HOLD_OFF_MS = 333;
 const byte LED_STATE_HOLD_RUN = 3;
 const int LED_STATE_HOLD_PAUSE_MS = 1000;
-const int LED_ERROR_ON_MS = 1000;
+const int LED_ERROR_ON_MS = 600;
 const int LED_ERROR_OFF_MS = 300;
 const int LED_ERROR_PAUSE_MS = 3000;
 
@@ -107,9 +109,9 @@ long status_led_last_toggle_ms = 0;
 byte num_runs_STATUS_LED = 0;
 
 // Stores the program send via bluetooth.
-// This array should use all the avaiable memory.
-const int NUM_FUNCTION_BYTES = 75; // as of version: V1.1
-byte program[75];
+// This array should use all the avaiable memory But mind that we need some free memory for dynamic variables.
+const int NUM_FUNCTION_BYTES = 120; // as of version: V1.1
+byte program[NUM_FUNCTION_BYTES];
 // Points to the current index of the program.
 int program_pointer = 0; // pointer to the current function
 int read_pointer = 0; // pointer to the current read/write position
@@ -118,8 +120,6 @@ unsigned long last_shot_ms = 0; // last time a photo was taken
 //long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
 
 SoftwareSerial blueToothSerial(RxD,TxD);
-
-const bool DEBUG = true;
 
 void setup() 
 { 
@@ -220,8 +220,9 @@ void statusLed(){
       break;
     case STATE_HOLD:
       if(led_is_on){
-        toggleStatusLedIf(LED_STATE_HOLD_ON_MS);
-        num_runs_STATUS_LED++;
+        if(toggleStatusLedIf(LED_STATE_HOLD_ON_MS)){
+          num_runs_STATUS_LED++;
+        }
       }else if(num_runs_STATUS_LED > LED_STATE_HOLD_RUN){
         if(toggleStatusLedIf(LED_STATE_HOLD_PAUSE_MS)){
            num_runs_STATUS_LED = 0;           
@@ -237,9 +238,9 @@ void statusLed(){
       break;
     default:
       // ERROR CASES
-      // 0xFF-ERROR_CASE_HEX + 1 is the number of blinks before pause.
+      // 0xFF-ERROR_CASE_HEX is the number of blinks before pause.
         if(led_is_on){
-          if(num_runs_STATUS_LED > (0xFF - state_prog + 1)){
+          if(num_runs_STATUS_LED > (0xFF - state_prog)){
             if(toggleStatusLedIf(LED_ERROR_PAUSE_MS)){
                num_runs_STATUS_LED = 0;           
             }
@@ -330,7 +331,7 @@ void runIntervallometer(){
       state_prog = STATE_NO_INSTRUCTIONS;
       // reset pointers for next read
       resetProgram();
-      //enableBluetooth(true);
+      enableBluetooth(true);
       // TODO ENABLE BLUETOOTH
       return;
     case SYMBOL_STOP_SHUTDOWN:
@@ -351,31 +352,6 @@ void runIntervallometer(){
     snore(ms_wait);
   }
   takePhoto();
-}
-
-void debugBits(long debug, int num_bits){
-  digitalWrite(HW_TRIGGER,LOW);
-  for(int i = 0; i < num_bits; i++){
-    //on
-    digitalWrite(HW_TRIGGER,HIGH);
-    delay(100);
-    digitalWrite(HW_TRIGGER,LOW);
-    delay(100);
-    digitalWrite(HW_TRIGGER,HIGH);
-    delay(100);
-    digitalWrite(HW_TRIGGER,LOW);
-    delay(100);
-    unsigned long state = debug & 0b1;
-    debug = debug >> 1;
-    if(state == 1){
-      digitalWrite(HW_TRIGGER,HIGH);
-    }else{
-      digitalWrite(HW_TRIGGER,LOW);
-    }
-    delay(1000);
-  }
-  digitalWrite(HW_TRIGGER,LOW);
-  delay(5000);
 }
 
 /*!
@@ -540,6 +516,8 @@ bool isSymbolStopAtProgramCounter(){
   return (program[program_pointer] == SYMBOL_STOP || program[program_pointer] == SYMBOL_STOP_SHUTDOWN);
 }
 
+
+unsigned long begin_read = 0;
 /*!
  * \brief read Reads the next bit send via bluetooth if avaiable and
  * CHANGES the state to STATE_HOLD if the SYMBOL_STOP was received.
@@ -547,6 +525,15 @@ bool isSymbolStopAtProgramCounter(){
 void read(){
   //check if there's any data sent from the remote bluetooth shield
   if(blueToothSerial.available()){
+    if(begin_read == 0){
+      begin_read = millis();
+    }else{
+      if(millis() - begin_read > MAX_RECEIVING_TIME_MS){
+        state_prog = STATE_ERROR_RECEIVING_TOO_LONG;
+        return;
+      }
+    }
+
     state_prog = STATE_RECEIVEING_DATA;
     program[read_pointer] = blueToothSerial.read();
 
@@ -580,28 +567,28 @@ void read(){
         // If the number of expected bytes is below zero a unknown Symbol was transmitted.
         state_prog = STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED;
 
+        /*
         byte data[4];
         data[0] = 0;
         data[1] = 0;
         data[2] = 0;
         data[3] = program[program_pointer];
-        write(data, 4);
-        
+        write(data, 4);*/
+
         return;
-      }       
+      }
     }
 
     read_pointer++;
     if(read_pointer >= NUM_FUNCTION_BYTES){
       state_prog = STATE_ERROR_PROGR_TOO_LONG;
+      return;
     }
   }
 }
 
 void write(byte *data, int length){
-  if(DEBUG){
-    blueToothSerial.write(data, length);
-  }
+  blueToothSerial.write(data, length);
 }
 
 
@@ -609,8 +596,5 @@ void write(byte *data, int length){
  * \brief shutDownBluetooth releases the Pins from beeing RX and Tx and makes the gpios
  */
 void shutDownBluetooth(){
-  if(!DEBUG){
-    // TODO
-    blueToothSerial.end();
-  }
+  blueToothSerial.end();
 }
