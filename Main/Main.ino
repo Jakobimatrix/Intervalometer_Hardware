@@ -32,6 +32,7 @@ const byte STATE_ERROR_UNKNOWN_SYMBOL_REQUESTED = 0xFF;
 const byte STATE_ERROR_UNCOOL_READ_POINTER_BEHAVIOUR = 0xFE;
 const byte STATE_ERROR_MILLIS_OVERFLOW = 0xFD;
 const byte STATE_ERROR_NEGATIVE_DELAY = 0xFC;
+const byte STATE_ERROR_PROGR_TOO_LONG = 0xFB;
 
 // definitions for status LED
 const int LED_NO_INSTRUCTIONS_ON_MS = 1700;
@@ -591,6 +592,9 @@ void read(){
     }
 
     read_pointer++;
+    if(read_pointer >= NUM_FUNCTION_BYTES){
+      state_prog = STATE_ERROR_PROGR_TOO_LONG;
+    }
   }
 }
 
