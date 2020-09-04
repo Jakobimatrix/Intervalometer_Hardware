@@ -10,11 +10,11 @@ Build an Intervalometer use minimal Hardware. This can be used for every Camera 
 ## Todos
  - [ ] Housing.
  - [ ] Support mirror lockup
- - [ ] Go into low power mode between shutter trigger
+ - [x] Go into low power mode between shutter trigger
  - [ ] Decide on power supply (BT Module needs 5.1V, Attiny beween 2.7–5.5V)
  - [ ] Disable Bluetooth programmatically (or manual with a switch?)
  - [ ] battery indicator
  - [ ] manual how to build/flash
-
+ - [ ] Clock-callibration Mode (uncallibrated there can be a relative error each second of 0.06s - 0.018s (from measurements))
 
 
