@@ -1,5 +1,6 @@
 # Intervalometer_Hardware
-Build an Intervalometer use minimal Hardware. This can be used for every Camera which can be triggered with a remote release.
+Build an Intervalometer use minimal Hardware. This can be used for every Camera which can be triggered with a remote release. To program the hardware use the Intervallometer App (Android) see Repository Intervallometer_App_Android.
+Make sure to check out equal TAGs. Commits without (or different) TAGs might not work together.
 
 ### Features so far:
  * Connect Bluetooth module to mobile device and transfere static function commands (once).
