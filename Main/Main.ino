@@ -56,6 +56,7 @@ const byte NUM_BYTES_VALUE = 4;
 const byte NUM_VALUES_F_CONST = 2;
 const byte NUM_VALUES_F_LIN = 3;
 const byte NUM_VALUES_F_QUAD = 4;
+const long FLOAT_PRECISION = 1000;
 
 // Returns the offset to the Function Type Symbol.
 const int getPtrBeginOffsetProg(){
@@ -106,114 +107,18 @@ byte num_runs_STATUS_LED = 0;
 
 // Stores the program send via bluetooth.
 // This array should use all the avaiable memory.
-byte program[50];
+const int NUM_FUNCTION_BYTES = 75; // as of version: V1.1
+byte program[75];
 // Points to the current index of the program.
 int program_pointer = 0; // pointer to the current function
 int read_pointer = 0; // pointer to the current read/write position
-unsigned long shot_counter = 0; // number of photos taken with the current function
+long shot_counter = 0; // number of photos taken with the current function
 unsigned long last_shot_ms = 0; // last time a photo was taken
-unsigned long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
+//long f_nm1 = 0; // last value of the recursive function determineing the delay between shots
 
 SoftwareSerial blueToothSerial(RxD,TxD);
 
 const bool DEBUG = true;
-
-void loadExampleProgramConst(){
-  // function (Const)
-  program[0] = SYMBOL_F_CONST;
-  // number of photos (10 + 1)
-  program[1] = 0x0;
-  program[2] = 0x0;
-  program[3] = 0x0;
-  program[4] = 0x0A;
-  // Constant C (500) in ms
-  program[5] = 0x00;
-  program[6] = 0x00;
-  program[7] = 0x01;
-  program[8] = 0xF4;
-  // next function = end
-  program[9] = SYMBOL_STOP_SHUTDOWN;
-  resetProgram();
-  state_prog = STATE_HOLD;
-}
-
-void loadExampleProgramLin(){
-  // function (Const)
-  program[0] = SYMBOL_F_LIN;
-  // number of photos (10 + 1)
-  program[1] = 0x0;
-  program[2] = 0x0;
-  program[3] = 0x0;
-  program[4] = 0x0A;
-  // Constant C (500) in ms
-  program[5] = 0x00;
-  program[6] = 0x00;
-  program[7] = 0x01;
-  program[8] = 0xF4;
-  // Constant B (gradient) (100) in ms
-  program[9] = 0x00;
-  program[10] = 0x00;
-  program[11] = 0x00;
-  program[12] = 0x64;
-  // next function = end
-  program[13] = SYMBOL_STOP_SHUTDOWN;
-  resetProgram();
-  state_prog = STATE_HOLD;
-}
-
-void loadExampleProgramLin2(){
-  // function (Const)
-  program[0] = SYMBOL_F_LIN;
-  // number of photos (10 + 1)
-  program[1] = 0x0;
-  program[2] = 0x0;
-  program[3] = 0x0;
-  program[4] = 0x0A;
-  // Constant C (1600) in ms
-  program[5] = 0x00;
-  program[6] = 0x00;
-  program[7] = 0x06;
-  program[8] = 0x40;
-  // Constant B (gradient) (-100) in ms
-  // Two's complement: invert all bits and add 1
-  program[9] = 0xFF;
-  program[10] = 0xFF;
-  program[11] = 0xFF;
-  program[12] = ~0x64 + 1;
-  // next function = end
-  program[13] = SYMBOL_STOP_SHUTDOWN;
-  resetProgram();
-  state_prog = STATE_HOLD;
-}
-
-void loadExampleProgramQuad(){
-  // function (Const)
-  program[0] = SYMBOL_F_QUAD;
-  // number of photos (15 + 1)
-  program[1] = 0x0;
-  program[2] = 0x0;
-  program[3] = 0x0;
-  program[4] = 0x0F;
-  // Constant C (500) in ms
-  program[5] = 0x00;
-  program[6] = 0x00;
-  program[7] = 0x01;
-  program[8] = 0xF4;
-  // Constant B (gradient) (100) in ms
-  program[9] = 0x00;
-  program[10] = 0x00;
-  program[11] = 0x00;
-  program[12] = 0x64;
-  // Constant A (curvature) (100) in ms
-  program[13] = 0x00;
-  program[14] = 0x00;
-  program[15] = 0x00;
-  program[16] = 0x32;
-  // next function = end
-  program[17] = SYMBOL_STOP_SHUTDOWN;
-  resetProgram();
-  state_prog = STATE_HOLD;
-}
 
 void setup() 
 { 
@@ -238,8 +143,7 @@ void setup()
   power_usi_disable();
 }
  
-void loop()
-{
+void loop(){
   switch (state_prog) {
     case STATE_NO_INSTRUCTIONS:
     case STATE_RECEIVEING_DATA:
@@ -267,7 +171,7 @@ void resetProgram(){
   read_pointer = 0; // pointer to the current read/write position
   shot_counter = 0; // number of photos taken with the current function
   last_shot_ms = 0; // last time a photo was taken
-  f_nm1 = -1; // last value of the recursive function determineing the delay between shots
+  //f_nm1 = -1; // last value of the recursive function determineing the delay between shots
   // I set that one to -1 because if it does not get set before the first calculation, something went wrong since -1 is not valide.
 }
 
@@ -339,12 +243,12 @@ void statusLed(){
                num_runs_STATUS_LED = 0;           
             }
           }else{
-            toggleStatusLedIf(LED_ERROR_ON_MS);
-            num_runs_STATUS_LED++;
+            if(toggleStatusLedIf(LED_ERROR_ON_MS)){
+              num_runs_STATUS_LED++;
+            }
           }
         }else{
           toggleStatusLedIf(LED_ERROR_OFF_MS);
-          num_runs_STATUS_LED++;
         }
       break;
   }
@@ -410,7 +314,7 @@ void runIntervallometer(){
     state_prog = STATE_ERROR_MILLIS_OVERFLOW;
     return;
   }
-  unsigned long next_delay;
+  long next_delay;
   switch (program[program_pointer]) {
     case SYMBOL_F_CONST:
       next_delay = getShutterDelayConst();
@@ -528,48 +432,73 @@ void writeValueAt(byte *bytes, long val){
  * \brief getShutterDelayConst Calculates the shutter delay for the n-th picture for a constant function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-unsigned long getShutterDelayConst(){
+long getShutterDelayConst(){
   //[ FUNC_SYMBOL | NUM_PICS | C ]
   // f(n) = f(n-1); f(0) = C;
+
+  return readProgramValueAt(program_pointer + getPtrBeginOffsetC())/FLOAT_PRECISION;
+  // recursve
+  /*
   if(shot_counter == 0){
-    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC());
+    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC())/FLOAT_PRECISION;
   }
   return f_nm1;
+  */
 }
 
 /*!
  * \brief getShutterDelayLin Calculates the shutter delay for the n-th picture for a linear function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-unsigned long getShutterDelayLin(){
+long getShutterDelayLin(){
   //[ FUNC_SYMBOL | NUM_PICS | C | B ]
   // f(0) = C
   // f(n) = f(n-1) + B
+  // f(n) = C + n*B
+  return (  readProgramValueAt(program_pointer + getPtrBeginOffsetC())
+          + shot_counter * readProgramValueAt(program_pointer + getPtrBeginOffsetB())
+         )/FLOAT_PRECISION;
+  /*
+  // recursive
   if(shot_counter == 0){
-    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC());
+    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC())/FLOAT_PRECISION;
   }else{
-    f_nm1 = f_nm1 + readProgramValueAt(program_pointer + getPtrBeginOffsetB());
+    f_nm1 = f_nm1 + readProgramValueAt(program_pointer + getPtrBeginOffsetB())/FLOAT_PRECISION;
   }
   return f_nm1;
+  */
 }
 
 /*!
  * \brief getShutterDelayLin Calculates the shutter delay for the n-th picture for a quadratic function.
  * \return how long to delay until the next picture should be taken in ms.
  */
-unsigned long getShutterDelayQuad(){
+long getShutterDelayQuad(){
   //[ FUNC_SYMBOL | NUM_PICS | C | B | A ]
   // f(0) = C
-  // f(n) = f(n-1) + A(n-1) + B
+  // f(n) = f(n-1) + A*(n-1) + B
+  // f(n) = C + 0.5*A*(n)*(n-1) + B*n
+
+  const long nn = shot_counter*(shot_counter-1);
+
+  return (readProgramValueAt(program_pointer + getPtrBeginOffsetC())
+          + 0.5*readProgramValueAt(program_pointer + getPtrBeginOffsetA())*nn
+          + shot_counter*readProgramValueAt(program_pointer + getPtrBeginOffsetB()))/FLOAT_PRECISION;
+
+  /*
+  // recursive
   if(shot_counter == 0){
-    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC());
+    f_nm1 = readProgramValueAt(program_pointer + getPtrBeginOffsetC())/FLOAT_PRECISION;
     return f_nm1;
   }else{
     f_nm1 = f_nm1
+            + (
             + readProgramValueAt(program_pointer + getPtrBeginOffsetA())*(shot_counter-1)
-            + readProgramValueAt(program_pointer + getPtrBeginOffsetB());
+            + readProgramValueAt(program_pointer + getPtrBeginOffsetB())
+            )/FLOAT_PRECISION;
   }
   return f_nm1;
+  */
 }
 
 
