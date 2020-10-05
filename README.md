@@ -10,6 +10,7 @@ Make sure to check out equal TAGs. Commits without (or different) TAGs might not
  
 ## Todos
  - [ ] Housing.
+ - [x] circuit scematics
  - [ ] Support mirror lockup
  - [x] Go into low power mode between shutter trigger
  - [ ] Decide on power supply (BT Module needs 5.1V, Attiny beween 2.7–5.5V)

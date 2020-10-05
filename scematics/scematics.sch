@@ -1,0 +1,241 @@
+EESchema Schematic File Version 4
+LIBS:scematics-cache
+EELAYER 26 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Intervalometer"
+Date "2020-10-05"
+Rev "1"
+Comp ""
+Comment1 ""
+Comment2 "A bipolar transistor (like BC547) works fine. \\nA MOSFET (n-channel enhancement type) would be ideal."
+Comment3 ""
+Comment4 "Depending on the HC-05 module in use Rx and Tx need a level of 3.3V."
+$EndDescr
+$Comp
+L attiny85:ATtiny85 U1
+U 1 1 5F54CCD6
+P 5350 3700
+F 0 "U1" H 5350 3950 50  0000 C CNN
+F 1 "ATtiny85" H 5350 3450 50  0000 C CNN
+F 2 "" H 5450 3750 50  0001 C CNN
+F 3 "" H 5450 3750 50  0001 C CNN
+	1    5350 3700
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R1
+U 1 1 5F54CE7F
+P 6200 3200
+F 0 "R1" V 6300 3200 50  0000 C CNN
+F 1 "10k" V 6100 3200 50  0000 C CNN
+F 2 "" V 6130 3200 50  0001 C CNN
+F 3 "~" H 6200 3200 50  0001 C CNN
+	1    6200 3200
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 5F54CFDC
+P 5850 4050
+F 0 "R3" V 5950 4050 50  0000 C CNN
+F 1 "1k" V 5750 4050 50  0000 C CNN
+F 2 "" V 5780 4050 50  0001 C CNN
+F 3 "~" H 5850 4050 50  0001 C CNN
+	1    5850 4050
+	-1   0    0    1   
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 5F54D1A2
+P 6200 3750
+F 0 "R2" V 6100 3750 50  0000 C CNN
+F 1 "10k" V 6300 3750 50  0000 C CNN
+F 2 "" V 6130 3750 50  0001 C CNN
+F 3 "~" H 6200 3750 50  0001 C CNN
+	1    6200 3750
+	0    1    1    0   
+$EndComp
+$Comp
+L Device:LED D1
+U 1 1 5F54D245
+P 5850 4400
+F 0 "D1" H 5850 4500 50  0000 C CNN
+F 1 "LED" H 5850 4300 50  0000 C CNN
+F 2 "" H 5850 4400 50  0001 C CNN
+F 3 "~" H 5850 4400 50  0001 C CNN
+	1    5850 4400
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Switch:SW_DIP_x01 SW1
+U 1 1 5F54D6D8
+P 6900 3200
+F 0 "SW1" H 6900 3350 50  0000 C CNN
+F 1 "SW_DIP_x01" H 6900 3050 50  0000 C CNN
+F 2 "" H 6900 3200 50  0001 C CNN
+F 3 "" H 6900 3200 50  0001 C CNN
+	1    6900 3200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0101
+U 1 1 5F54DFFB
+P 4950 4650
+F 0 "#PWR0101" H 4950 4400 50  0001 C CNN
+F 1 "GND" H 4955 4477 50  0000 C CNN
+F 2 "" H 4950 4650 50  0001 C CNN
+F 3 "" H 4950 4650 50  0001 C CNN
+	1    4950 4650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Transistor_BJT:2N3905 Q1
+U 1 1 5F554235
+P 6600 3950
+F 0 "Q1" V 6550 4100 50  0000 L CNN
+F 1 "npn" V 6800 3900 50  0000 L CNN
+F 2 "Package_TO_SOT_THT:TO-92_Inline" H 6800 3875 50  0001 L CIN
+F 3 "https://www.fairchildsemi.com/datasheets/2N/2N3905.pdf" H 6600 3950 50  0001 L CNN
+	1    6600 3950
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:AudioJack3 J1
+U 1 1 5F5A452B
+P 6600 4600
+F 0 "J1" V 6900 4650 50  0000 R CNN
+F 1 "AudioJack" V 6300 4750 50  0000 R CNN
+F 2 "" H 6600 4600 50  0001 C CNN
+F 3 "~" H 6600 4600 50  0001 C CNN
+	1    6600 4600
+	0    -1   -1   0   
+$EndComp
+$Comp
+L power:GND #PWR0102
+U 1 1 5F5A46A3
+P 5850 4650
+F 0 "#PWR0102" H 5850 4400 50  0001 C CNN
+F 1 "GND" H 5855 4477 50  0000 C CNN
+F 2 "" H 5850 4650 50  0001 C CNN
+F 3 "" H 5850 4650 50  0001 C CNN
+	1    5850 4650
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR0103
+U 1 1 5F5A46B9
+P 7200 4650
+F 0 "#PWR0103" H 7200 4400 50  0001 C CNN
+F 1 "GND" H 7205 4477 50  0000 C CNN
+F 2 "" H 7200 4650 50  0001 C CNN
+F 3 "" H 7200 4650 50  0001 C CNN
+	1    7200 4650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	5850 4650 5850 4550
+Wire Wire Line
+	5850 4250 5850 4200
+Wire Wire Line
+	5850 3900 5850 3850
+Wire Wire Line
+	5850 3850 5700 3850
+Wire Wire Line
+	6800 4050 6950 4050
+Wire Wire Line
+	6950 4050 6950 4400
+Wire Wire Line
+	6950 4400 6700 4400
+Wire Wire Line
+	6500 4400 6300 4400
+Wire Wire Line
+	6300 4400 6300 4050
+Wire Wire Line
+	6300 4050 6400 4050
+Wire Wire Line
+	6050 3750 5700 3750
+Wire Wire Line
+	7200 3200 7200 4050
+Wire Wire Line
+	5800 3050 5800 3200
+Wire Wire Line
+	5800 3550 5700 3550
+Wire Wire Line
+	6050 3200 5800 3200
+Connection ~ 5800 3200
+Wire Wire Line
+	5800 3200 5800 3550
+Wire Wire Line
+	6350 3200 6500 3200
+$Comp
+L HC-05:HC-05-soldered U2
+U 1 1 5F7B1620
+P 4400 3750
+F 0 "U2" H 4150 4050 50  0000 C CNN
+F 1 "HC-05-soldered" H 4150 3550 50  0000 C CNN
+F 2 "" H 4100 4050 50  0001 C CNN
+F 3 "" H 4100 4050 50  0001 C CNN
+	1    4400 3750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4650 3550 4900 3550
+Wire Wire Line
+	4900 3550 4900 3750
+Wire Wire Line
+	4900 3750 5050 3750
+Wire Wire Line
+	4650 3650 5050 3650
+Wire Wire Line
+	5050 3850 4950 3850
+Wire Wire Line
+	4650 3750 4800 3750
+Wire Wire Line
+	4800 3750 4800 3850
+Wire Wire Line
+	4800 3850 4950 3850
+Connection ~ 4950 3850
+Wire Wire Line
+	4650 3850 4700 3850
+Wire Wire Line
+	4700 3850 4700 3200
+Wire Wire Line
+	4700 3200 5800 3200
+Wire Wire Line
+	4950 3850 4950 4650
+Wire Wire Line
+	6350 3750 6600 3750
+Wire Wire Line
+	6950 4050 7200 4050
+Connection ~ 6950 4050
+Connection ~ 7200 4050
+Wire Wire Line
+	7200 4050 7200 4650
+$Comp
+L power:+5V #PWR0104
+U 1 1 5F7C0BD7
+P 5800 3050
+F 0 "#PWR0104" H 5800 2900 50  0001 C CNN
+F 1 "+5V" H 5815 3223 50  0000 C CNN
+F 2 "" H 5800 3050 50  0001 C CNN
+F 3 "" H 5800 3050 50  0001 C CNN
+	1    5800 3050
+	1    0    0    -1  
+$EndComp
+NoConn ~ 5050 3550
+NoConn ~ 6600 4400
+Wire Wire Line
+	5700 3650 5900 3650
+Wire Wire Line
+	5900 3450 6500 3450
+Wire Wire Line
+	6500 3450 6500 3200
+Wire Wire Line
+	5900 3450 5900 3650
+Connection ~ 6500 3200
+Wire Wire Line
+	6500 3200 6600 3200
+$EndSCHEMATC
